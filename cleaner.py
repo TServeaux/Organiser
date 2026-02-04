@@ -1,22 +1,35 @@
 import pandas as pd
 import numpy as np
-import json
 
-def normaliePrices() :
+def getDataFromSheet(file):
+    file = pd.read_excel(file)
+    return file
+
+def normalizePrices(parameters,symbol,file):
+    
     return
 
-def standardizeDates() :
+def standardizeDates(parameters,file) :
     return
 
-def removeDuplicates() :
+def standardizePhoneNumbers(parameters,file):
     return
 
-def mergesFiles():
+def standardizeNames(parameters,file):
     return
 
-def cleanColumns():
+def removeDuplicates(parameters,file) :
+    return
+
+def mergesFiles(parameters,file):
+    return
+
+def cleanColumns(parameters,file):
     #sert à uniformiser le nom des colonnes
+    
     return
 
-def mergeFiles():
+def mergeFiles(parameters,file):
     return
+
+print(pd.read_excel("input/Try.xlsx"))
