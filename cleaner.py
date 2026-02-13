@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 import os
 
+numbers = ['0','1','2','3','4','5','6','7','8','9']
+month = ['Junuary','February','March','April','Mai',
+        'June','July','August','September','October',
+        'November','December']
+
 def getDataFromSheet(file):
 
     """
@@ -9,7 +14,7 @@ def getDataFromSheet(file):
     Entry :
         - File (excel or csv)
     Output :
-        - Matrix of data (dictionnary)
+        - Matrix of data (dictionnary of list)
     """
     
     fileType = os.path.splitext(file)[1] # determine the type of the file
@@ -29,48 +34,101 @@ def getDataFromSheet(file):
 
     return file
 
-def normalizePrices(parameters,file):
+def normalizePrices(devise,columnName,file):
     
-    file = getDataFromSheet(file)
+    """
+    This function normalize prices.
+    Entry :
+        - File : dictionnary
+        - ColumnName : Name of the column we want to change
+        - Devise : devise of money
+    Output :
+        - Values : list of normalized prices
+    """
+    
     values = []
 
-    for val in file[parameters[0]] :
+    for val in file[columnName] :
         
         if isinstance(val,float) :
             values.append(val)
         
         elif isinstance(val,int) :
-            val = str(val) + parameters[1]
-            values.append(val)
+            if val == 0 :
+                values.append(np.nan)
+                
+            else :
+                val = str(val) + devise
+                values.append(val)
         
         elif isinstance(val,str) :
             word = ""
 
             for letter in val :
-                if isinstance(letter,int) :
-                    word += str(letter)
+                if letter in numbers :
+                    word += letter
                 
                 else :
-                    word += parameters[1]
-                    word += 'errata'
-            
+                    word += devise
+                    
             values.append(word)
     
-    print(values)
-    return
+    return values
 
 def standardizeDates(parameters,file) :
+    
     return
 
-def standardizePhoneNumbers(parameters,file):
+def standardizePhoneNumbers(columnName,parameters,file):
     return
 
-def standardizeNames(parameters,file):
-    return
+def standardizeNames(columnName,captialize,file):
+    """
+    This function standardize names.
+    Entry :
+        - File : dictionnary
+        - ColumnName : Name of the column we want to change
+        - Captialize : boolean to know if you wnat the name full 
+        capitalize or only the first letter
+    Output :
+        - Values : list of standardized names
+    """
+   
+    names = []
+    
+    for val in file[columnName] :
+        
+        if isinstance(val,str) :
+            
+            val = val.split()
+            standadizedName = []
+            
+            for name in val :
+                word = ''
+                
+                firstLetter = True
+                
+                for letter in name :
+                    if firstLetter :
+                        word += letter.capitalize()
+                        if not captialize :
+                            firstLetter = False
+                        
+                    else :
+                        word += letter.lower()
+                        
+                standadizedName.append(word)
+            
+            names.append(' '.join(standadizedName))
+        
+        else :
+            names.append(val)
+        
+    return names
 
-def removeDuplicates(parameters,file) :
-
-    return
+def removeDuplicates(file) :
+    
+    return file
 
 def mergesFiles(parameters,file):
     return
@@ -80,7 +138,8 @@ def cleanColumns(file):
     
     return file
 
-def mergeFiles(parameters,file):
+def deleteRow(parameters,file):
+    #la fct sert à supprimer des colonnes sur un critere (ex : pas d adresse mail, pas de nom ... etc)
     return
 
-normalizePrices(["prix","eu"],"./input/Try.xlsx")
+removeDuplicates("./input/Try.xlsx")
