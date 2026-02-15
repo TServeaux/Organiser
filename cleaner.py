@@ -1,20 +1,19 @@
 import pandas as pd
 import numpy as np
+from dateutil import parser
+import re
 import os
 
-numbers = ['0','1','2','3','4','5','6','7','8','9']
-month = ['Junuary','February','March','April','Mai',
-        'June','July','August','September','October',
-        'November','December']
-
-def getDataFromSheet(file):
+def getDataFromSheet(file) :
 
     """
     This function transform the excel file into a matrix of data.
-    Entry :
+
+    Input :
         - File (excel or csv)
+
     Output :
-        - Matrix of data (dictionnary of list)
+        - Matrix of data -> pd.DataFrame
     """
     
     fileType = os.path.splitext(file)[1] # determine the type of the file
@@ -26,120 +25,201 @@ def getDataFromSheet(file):
         file = pd.read_csv(file)
 
     else : 
-        file = "Not good type of file"
-        return file
+        return "Not good type of file"
 
     file.rename(columns=str.lower, inplace=True)
-    file = file.to_dict(orient='list')
 
     return file
 
-def normalizePrices(devise,columnName,file):
+def normalizePrices(devise,column) :
     
     """
     This function normalize prices.
-    Entry :
-        - File : dictionnary
-        - ColumnName : Name of the column we want to change
-        - Devise : devise of money
+
+    Input :
+        - Column with prices
+        - Devise of money
+
     Output :
-        - Values : list of normalized prices
+        - Column with normalized prices
     """
     
-    values = []
-
-    for val in file[columnName] :
-        
-        if isinstance(val,float) :
-            values.append(val)
-        
-        elif isinstance(val,int) :
-            if val == 0 :
-                values.append(np.nan)
-                
-            else :
-                val = str(val) + devise
-                values.append(val)
-        
-        elif isinstance(val,str) :
-            word = ""
-
-            for letter in val :
-                if letter in numbers :
-                    word += letter
-                
-                else :
-                    word += devise
-                    
-            values.append(word)
+    column = column.astype(str)
+    column = column.str.replace(r'[€$]', f'{devise}', regex=False)
+    column = column.str.replace(',', '.', regex=False)
+    column = column.str.strip()
+    column = pd.to_numeric(column, errors='coerce')
     
-    return values
+    return column
 
-def standardizeDates(parameters,file) :
+def standardizeDates(column,dayFirst) :
+
+    """
+    This function normalize prices in format YYYY-MM-DD or DD-MM-YYYY.
+
+    Input :
+        - Column with dates
+        - Day Fisrt (bool) : True for french format
+
+    Output :
+        - Column with standadized dates
+    """
+
+    standardizedDates = []
+
+    for val in column :
+        
+        if pd.isna(val) :
+           standardizedDates.append(pd.NaT)
+        
+        try :
+            parsedDate = parser.parse(str(val), dayfirst=dayFirst)
+            standardizedDates.append(parsedDate.strftime("%Y-%M-%D"))
+
+        except :
+            standardizedDates.append(pd.NaT)
+
+    return pd.Series(standardizedDates)
+
+def standardizePhoneNumbers(column, defaultCountryCode) :
+
+    """
+    This function normalize phone number.
+
+    Input :
+        - Column with phone number
+        - defaultCountryCode : default country code if missing (e.g., '+33')
+
+    Output :
+        - Column with standadized phone number
+    """
+
+    standardizedPhoneNumbers = []
     
-    return
+    for value in column :
 
-def standardizePhoneNumbers(columnName,parameters,file):
-    return
+        if pd.isna(value) :
+            standardizedPhoneNumbers.append(None)
+            continue
 
-def standardizeNames(columnName,captialize,file):
+        value = str(value).strip()
+        digits = re.sub(r'[^0-9+]', '', value)
+
+        if digits.startswith("00") :
+            digits = "+" + digits[2:]
+
+        elif digits.startswith("0") :
+            digits = defaultCountryCode + digits[1:]
+
+        if len(digits) < 7 :
+            standardizedPhoneNumbers.append(None)
+
+        else :
+            standardizedPhoneNumbers.append(digits)
+    
+    return pd.Series(standardizedPhoneNumbers)
+
+def standardizeNames(column):
+
     """
     This function standardize names.
-    Entry :
-        - File : dictionnary
-        - ColumnName : Name of the column we want to change
-        - Captialize : boolean to know if you wnat the name full 
-        capitalize or only the first letter
+
+    Input :
+        - Column of names
+
     Output :
-        - Values : list of standardized names
+        - Column of standardized names
     """
-   
-    names = []
     
-    for val in file[columnName] :
-        
-        if isinstance(val,str) :
-            
-            val = val.split()
-            standadizedName = []
-            
-            for name in val :
-                word = ''
-                
-                firstLetter = True
-                
-                for letter in name :
-                    if firstLetter :
-                        word += letter.capitalize()
-                        if not captialize :
-                            firstLetter = False
-                        
-                    else :
-                        word += letter.lower()
-                        
-                standadizedName.append(word)
-            
-            names.append(' '.join(standadizedName))
-        
-        else :
-            names.append(val)
-        
-    return names
+    column = column.str.strip()
+    column = column.str.replace(r'\s+', ' ', regex = True)
+    column = column.str.title()
 
-def removeDuplicates(file) :
+    return column
+
+def removeDuplicates(file , subset=None, keep=False) :
+    """
+    Delete doublon in a file.
+
+    Input :
+        - File to clean
+        - Subset : list or None → column to verifie for doublons (None = toutes les colonnes)
+        - Keep : 'first', 'last', False for which you want to keep ('first' = first occurence)
+
+    Output :
+        - File cleaned, without doublons
+    """
+
+    cleanedFile = file.drop_duplicates(subset=subset, keep=keep)
+    return cleanedFile
+
+def mergesFiles(file1,file2,on,how):
+    """
+    Merges two DataFrames into a single DataFrame.
+
+    Input:
+        - file1 : The second file to merge.
+        - file2 : The second file to merge.
+        - On : list (optional).
+        Column(s) to join on. If None, merges on columns with the same names.
+        - How : str, default 'inner'
+            Type of merge to perform:
+                - 'left' : All rows from the left DataFrame + matching rows from the right
+                - 'right': All rows from the right DataFrame + matching rows from the left
+                - 'outer': All rows from both DataFrames
+                - 'inner': Only rows that exist in both DataFrames
+
+    Output:
+        -A new file resulting from merging file1 and file2.
+    """
     
-    return file
+    mergedFile = pd.merge(file1, file2, on=on, how=how)
+    
+    return mergedFile
 
-def mergesFiles(parameters,file):
-    return
 
 def cleanColumns(file):
-    #sert à uniformiser le nom des colonnes
+    """
+    Standardizes column names:
+        - Converts to lowercase
+        - Replaces spaces with '_'
+        - Removes special characters
+        - Strips leading and trailing spaces
+    """
+
+    cleanedColumns = []
+
+    for column in file.columns:
+
+        newColumn = str(column).lower().strip()
+        newColumn = re.sub(r'[\s\-]+', '_', newColumn)
+        newColumn = re.sub(r'[^\w_]', '', newColumn)
+
+        cleanedColumns.append(newColumn)
+
+    file.columns = cleanedColumns
     
     return file
 
-def deleteRow(parameters,file):
-    #la fct sert à supprimer des colonnes sur un critere (ex : pas d adresse mail, pas de nom ... etc)
-    return
+def deleteRow(columnName,file):
 
-removeDuplicates("./input/Try.xlsx")
+    """
+    This function can detelete a targeted empty row.
+
+    Entry :
+        - ColumnName : Name of the column we want to detelete if nothing in it
+
+    Output :
+        - File : the dictionnary without the empties columns
+    """
+
+    file = file.to_dict(orient='list')
+    attempt = file[columnName].count(np.nan)
+
+    for _ in range(attempt) :
+        index = file[columnName].index(np.nan)
+
+        for key in file.keys():
+            file[key].pop(index)
+
+    return file
