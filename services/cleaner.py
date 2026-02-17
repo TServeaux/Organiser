@@ -3,6 +3,7 @@ import numpy as np
 from dateutil import parser
 import re
 import os
+import json
 
 def getDataFromSheet(file) :
 
@@ -31,7 +32,26 @@ def getDataFromSheet(file) :
 
     return file
 
-def normalizePrices(devise,column) :
+def clean(file):
+
+    file = removeDuplicates(file)
+
+    file["date_de_vente"] = standardizeDates(file["date_de_vente"])
+    file["montant"] = normalizePrices(file["montant"])
+    file["telephone"] = standardizePhoneNumbers(file["telephone"])
+    file["nom"] = standardizeNames(file["nom"])
+
+    file = cleanColumns(file)
+
+    return file
+
+def merge(file1,file2):
+
+    file = mergesFiles(file1,file2)
+
+    return file
+
+def normalizePrices(columnName,devise) :
     
     """
     This function normalize prices.
@@ -44,13 +64,13 @@ def normalizePrices(devise,column) :
         - Column with normalized prices
     """
     
-    column = column.astype(str)
-    column = column.str.replace(r'[€$]', f'{devise}', regex=False)
-    column = column.str.replace(',', '.', regex=False)
-    column = column.str.strip()
-    column = pd.to_numeric(column, errors='coerce')
+    columnName = columnName.astype(str)
+    columnName = columnName.str.replace(r'[€$]', f'{devise}', regex=False)
+    columnName = columnName.str.replace(',', '.', regex=False)
+    columnName = columnName.str.strip()
+    columnName = pd.to_numeric(columnName, errors='coerce')
     
-    return column
+    return columnName
 
 def standardizeDates(column,dayFirst) :
 
@@ -137,7 +157,7 @@ def standardizeNames(column):
 
     return column
 
-def removeDuplicates(file , subset=None, keep=False) :
+def removeDuplicates(file , subset, keep) :
     """
     Delete doublon in a file.
 

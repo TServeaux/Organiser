@@ -1,0 +1,30 @@
+{
+    "dates" : {
+        "columnName" : "Date de vente",
+        "dayFirst"  :   "False"
+    },
+
+    "prices" : {
+        "columnName" : "Montant (€)",
+        "currency" : "€"
+    },
+
+    "names" : {
+        "columnName" : " Nom Client "
+    },
+
+    "phone" : {
+        "columnName" : "Telephone",
+        "defaultCountryCode" : "$"
+    },
+
+    "merge" : {
+        "how" : "outer",
+        "on" : "None"
+    },
+
+    "duplicates" : {
+        "subset" : "None",
+        "keep"  : "False"
+    }
+}
