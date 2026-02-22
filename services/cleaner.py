@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from dateutil import parser
 import re
 import os
@@ -30,28 +29,67 @@ def getDataFromSheet(file) :
 
     file.rename(columns=str.lower, inplace=True)
 
-    return file
+    return file,fileType
 
-def clean(file):
+def clean(file,outputPath):
+    """
+    This function apply the algorithm of cleaning.
+    """
 
-    file = removeDuplicates(file)
-
-    file["date_de_vente"] = standardizeDates(file["date_de_vente"])
-    file["montant"] = normalizePrices(file["montant"])
-    file["telephone"] = standardizePhoneNumbers(file["telephone"])
-    file["nom"] = standardizeNames(file["nom"])
+    file,fileType = getDataFromSheet(file)
+    data = readParameter("./config.json")
 
     file = cleanColumns(file)
 
+    subset = data['duplicates']['subset']
+    if not subset or subset == "None":
+        subset = None
+
+    file = removeDuplicates(file,subset=subset,keep=data['duplicates']['keep'])
+
+    col = data["dates"]["columnName"]
+    file[col] = standardizeDates(col, bool(data["dates"]["dayFirst"]))
+
+    col = data["prices"]["columnName"]
+    file[col] = normalizePrices(file[col])
+
+    col = data["phone"]["columnName"]
+    file[col] = standardizePhoneNumbers(col,data["phone"]["defaultCountryCode"])
+
+    col = data["names"]["columnName"]
+    file[col] = standardizeNames(file[col])
+
+    if fileType == ".xlsx" :
+        file.to_excel(outputPath, index=False)
+
+    else :
+        file.to_csv(outputPath, index=False)
+
     return file
 
-def merge(file1,file2):
+def merge(file1, file2, outputPath):
+    file1, _ = getDataFromSheet(file1)
+    file2, _ = getDataFromSheet(file2)
 
-    file = mergesFiles(file1,file2)
+    config = readParameter("./config.json")
+    merge_cfg = config.get("merge", {})
 
-    return file
+    on = merge_cfg.get("on")
+    how = merge_cfg.get("how", "inner")
 
-def normalizePrices(columnName,devise) :
+    if on == "None" or on == []:
+        on = None
+
+    merged = mergesFiles(file1, file2, on=on, how=how)
+
+    if outputPath.lower().endswith(".xlsx"):
+        merged.to_excel(outputPath, index=False)
+    else:
+        merged.to_csv(outputPath, index=False)
+
+    return merged
+
+def normalizePrices(columnName) :
     
     """
     This function normalize prices.
@@ -65,7 +103,7 @@ def normalizePrices(columnName,devise) :
     """
     
     columnName = columnName.astype(str)
-    columnName = columnName.str.replace(r'[€$]', f'{devise}', regex=False)
+    columnName = columnName.str.replace(r'[€$]', '', regex=False)
     columnName = columnName.str.replace(',', '.', regex=False)
     columnName = columnName.str.strip()
     columnName = pd.to_numeric(columnName, errors='coerce')
@@ -221,25 +259,9 @@ def cleanColumns(file):
     
     return file
 
-def deleteRow(columnName,file):
-
-    """
-    This function can detelete a targeted empty row.
-
-    Entry :
-        - ColumnName : Name of the column we want to detelete if nothing in it
-
-    Output :
-        - File : the dictionnary without the empties columns
-    """
-
-    file = file.to_dict(orient='list')
-    attempt = file[columnName].count(np.nan)
-
-    for _ in range(attempt) :
-        index = file[columnName].index(np.nan)
-
-        for key in file.keys():
-            file[key].pop(index)
-
-    return file
+def readParameter(data) :
+    
+    with open(data,'r',encoding='utf-8') as d:
+        data = json.load(d)
+    
+    return data

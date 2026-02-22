@@ -1,21 +1,20 @@
 {
     "dates" : {
-        "columnName" : "Date de vente",
+        "columnName" : "date_de_vente",
         "dayFirst"  :   "False"
     },
 
     "prices" : {
-        "columnName" : "Montant (€)",
-        "currency" : "€"
+        "columnName" : "montant"
     },
 
     "names" : {
-        "columnName" : " Nom Client "
+        "columnName" : "nom_client"
     },
 
     "phone" : {
-        "columnName" : "Telephone",
-        "defaultCountryCode" : "$"
+        "columnName" : "telephone",
+        "defaultCountryCode" : "+33"
     },
 
     "merge" : {
@@ -25,6 +24,6 @@
 
     "duplicates" : {
         "subset" : "None",
-        "keep"  : "False"
+        "keep"  : "last"
     }
 }

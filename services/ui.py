@@ -35,9 +35,6 @@ class App(qtWidgets.QMainWindow):
         self.mergeButton.clicked.connect(self.merging)
         self.mergeButton.setEnabled(False)
 
-        self.deteleEmptyRow = qtWidgets.QPushButton("Detele Empty Row", self)
-        self.deteleEmptyRow.clicked.connect(self.deleting)
-
         principalLayout = qtWidgets.QVBoxLayout()
         principalLayout.addWidget(self.dropLabel)
         principalLayout.addStretch()
@@ -45,7 +42,6 @@ class App(qtWidgets.QMainWindow):
         bottomLayout = qtWidgets.QHBoxLayout()
         bottomLayout.addWidget(self.cleanButton)
         bottomLayout.addWidget(self.mergeButton)
-        bottomLayout.addWidget(self.deteleEmptyRow)
 
         principalLayout.addLayout(bottomLayout)
         centralWidget.setLayout(principalLayout)
@@ -68,9 +64,6 @@ class App(qtWidgets.QMainWindow):
         mergeAction.triggered.connect(self.merging)
         fileActions.append(mergeAction)
 
-        deleteRowAction = qtGui.QAction("Delete Row", self)
-        deleteRowAction.triggered.connect(self.deleting)
-        fileActions.append(deleteRowAction)
 
         quitAction = qtGui.QAction("Quit", self)
         quitAction.setShortcut("Ctrl+Q")
@@ -89,10 +82,6 @@ class App(qtWidgets.QMainWindow):
         mergeAbout = qtGui.QAction("About Merge", self)
         mergeAbout.triggered.connect(self.aboutMerge)
         helpActions.append(mergeAbout)
-
-        deleteRowAbout = qtGui.QAction("About Detele Row", self)
-        deleteRowAbout.triggered.connect(self.aboutDeleteRow)
-        helpActions.append(deleteRowAbout)
 
         for action in helpActions:
             helpMenu.addAction(action)
@@ -138,14 +127,6 @@ class App(qtWidgets.QMainWindow):
             "Cleans and standardizes a data file (CSV or Excel)."
         )
 
-    def aboutDeleteRow(self):
-
-        qtWidgets.QMessageBox.information(
-            self,
-            "Delete Row",
-            ""
-        )
-
     def aboutMerge(self):
 
         qtWidgets.QMessageBox.information(
@@ -160,9 +141,20 @@ class App(qtWidgets.QMainWindow):
             self.dropLabel.setText("Drop files here (CSV, XLSX)")
             return
         
+        savePath, _ = qtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Exporter le fichier nettoyé",
+            "cleaned_file.csv",
+            "CSV (*.csv);;Excel (*.xlsx)"
+        )
+
+        if not savePath:
+            return
+
+
         for file in self.files :
-            file_path = file
-            cl.clean(file_path)
+            filePath = file
+            cl.clean(filePath,savePath)
 
         self.dropLabel.setText(f"Cleaning:\n{self.files[0]}")
 
@@ -172,10 +164,17 @@ class App(qtWidgets.QMainWindow):
             "Merging files:\n" + "\n".join(self.files)
         )
 
-        cl.merge(self.files[0],self.files[1])
+        savePath, _ = qtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Exporter le fichier nettoyé",
+            "cleaned_file.csv",
+            "CSV (*.csv);;Excel (*.xlsx)"
+        )
 
-    def deleting(self):
-        self.dropLabel.setText("Deleting empty rows")
+        if not savePath:
+            return
+
+        cl.merge(self.files[0],self.files[1],savePath)
 
     def dragEnterEvent(self, event):
 
@@ -204,10 +203,7 @@ class App(qtWidgets.QMainWindow):
         self.set_filled_style()
         self.dropLabel.setText("\n".join(self.files))
         self.mergeButton.setEnabled(len(self.files) >= 2)
-        self.cleanButton.setEnabled(not(len(self.files) >= 2))
     
-
-
 if __name__ == "__main__":
     app = qtWidgets.QApplication(sys.argv)
     fenetre = App()
