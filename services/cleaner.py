@@ -117,7 +117,6 @@ def standardizeDates(column, dayFirst):
 
     Input:
         - column: pandas Series containing dates
-        - dayFirst (bool): True for DD/MM/YYYY formats
 
     Output:
         - pandas Series of standardized dates (datetime64)
