@@ -1,7 +1,7 @@
 {
     "dates" : {
         "columnName" : "date_de_vente",
-        "dayFirst"  :   "False"
+        "dayFirst"  :   false
     },
 
     "prices" : {

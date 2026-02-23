@@ -48,26 +48,27 @@ def clean(file,outputPath):
     file = removeDuplicates(file,subset=subset,keep=data['duplicates']['keep'])
 
     col = data["dates"]["columnName"]
-    file[col] = standardizeDates(col, bool(data["dates"]["dayFirst"]))
+    file[col] = standardizeDates(file[col], data["dates"]["dayFirst"])
 
     col = data["prices"]["columnName"]
     file[col] = normalizePrices(file[col])
 
     col = data["phone"]["columnName"]
-    file[col] = standardizePhoneNumbers(col,data["phone"]["defaultCountryCode"])
+    file[col] = standardizePhoneNumbers(file[col] ,data["phone"]["defaultCountryCode"])
 
     col = data["names"]["columnName"]
     file[col] = standardizeNames(file[col])
 
-    if fileType == ".xlsx" :
+    if outputPath.lower().endswith(".xlsx"):
         file.to_excel(outputPath, index=False)
 
-    else :
+    else:
         file.to_csv(outputPath, index=False)
 
     return file
 
 def merge(file1, file2, outputPath):
+
     file1, _ = getDataFromSheet(file1)
     file2, _ = getDataFromSheet(file2)
 
@@ -103,41 +104,37 @@ def normalizePrices(columnName) :
     """
     
     columnName = columnName.astype(str)
-    columnName = columnName.str.replace(r'[€$]', '', regex=False)
+    columnName = columnName.str.replace(r'[€$]', '', regex=True)
+    columnName = columnName.str.replace(r'\s+', '', regex=True)
     columnName = columnName.str.replace(',', '.', regex=False)
-    columnName = columnName.str.strip()
     columnName = pd.to_numeric(columnName, errors='coerce')
     
     return columnName
 
-def standardizeDates(column,dayFirst) :
-
+def standardizeDates(column, dayFirst):
     """
-    This function normalize prices in format YYYY-MM-DD or DD-MM-YYYY.
+    Standardizes dates to YYYY-MM-DD.
 
-    Input :
-        - Column with dates
-        - Day Fisrt (bool) : True for french format
+    Input:
+        - column: pandas Series containing dates
+        - dayFirst (bool): True for DD/MM/YYYY formats
 
-    Output :
-        - Column with standadized dates
+    Output:
+        - pandas Series of standardized dates (datetime64)
     """
 
-    standardizedDates = []
+    def smart_parse_date(value):
+        if pd.isna(value):
+            return pd.NaT
 
-    for val in column :
-        
-        if pd.isna(val) :
-           standardizedDates.append(pd.NaT)
-        
-        try :
-            parsedDate = parser.parse(str(val), dayfirst=dayFirst)
-            standardizedDates.append(parsedDate.strftime("%Y-%M-%D"))
+        value = str(value).strip()
 
-        except :
-            standardizedDates.append(pd.NaT)
+        try:
+            return parser.parse(value, dayfirst=True, fuzzy=True)
+        except Exception:
+            return pd.NaT
 
-    return pd.Series(standardizedDates)
+    return column.apply(smart_parse_date)
 
 def standardizePhoneNumbers(column, defaultCountryCode) :
 
@@ -152,30 +149,31 @@ def standardizePhoneNumbers(column, defaultCountryCode) :
         - Column with standadized phone number
     """
 
-    standardizedPhoneNumbers = []
-    
-    for value in column :
+    result = []
 
-        if pd.isna(value) :
-            standardizedPhoneNumbers.append(None)
+    for value in column:
+        if pd.isna(value):
+            result.append(None)
             continue
 
         value = str(value).strip()
         digits = re.sub(r'[^0-9+]', '', value)
 
-        if digits.startswith("00") :
+        if digits.startswith("00"):
             digits = "+" + digits[2:]
 
-        elif digits.startswith("0") :
+        elif digits.startswith(defaultCountryCode.replace("+", "")):
+            digits = "+" + digits
+
+        elif digits.startswith("0"):
             digits = defaultCountryCode + digits[1:]
 
-        if len(digits) < 7 :
-            standardizedPhoneNumbers.append(None)
+        if len(re.sub(r'\D', '', digits)) < 10:
+            result.append(None)
+        else:
+            result.append(digits)
 
-        else :
-            standardizedPhoneNumbers.append(digits)
-    
-    return pd.Series(standardizedPhoneNumbers)
+    return pd.Series(result, index=column.index)
 
 def standardizeNames(column):
 
