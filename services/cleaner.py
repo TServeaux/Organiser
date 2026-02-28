@@ -48,7 +48,7 @@ def clean(file,outputPath):
     file = removeDuplicates(file,subset=subset,keep=data['duplicates']['keep'])
 
     col = data["dates"]["columnName"]
-    file[col] = standardizeDates(file[col], data["dates"]["dayFirst"])
+    file[col] = standardizeDates(file[col])
 
     col = data["prices"]["columnName"]
     file[col] = normalizePrices(file[col])
@@ -111,7 +111,7 @@ def normalizePrices(columnName) :
     
     return columnName
 
-def standardizeDates(column, dayFirst):
+def standardizeDates(column):
     """
     Standardizes dates to YYYY-MM-DD.
 

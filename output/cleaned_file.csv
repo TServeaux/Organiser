@@ -1,0 +1,20 @@
+nom_client,date_de_vente,montant,telephone,ville
+Jean Dupont,2024-01-12,1200.5,+33612345678,Paris
+Marie Durand,2024-01-13,500.0,+33612345678,Lyon
+Jean Dupont,2024-01-13,500.0,+33612345678,Paris
+Paul Martin,2024-01-14,300.75,,Marseille
+Alice Bernard,2024-01-15,1.0,+33612345678,Paris
+Alice Bernard,2024-01-15,750.0,+33612345678,Paris
+Marc-Lee,,,+33612345678,Lille
+Marc Lee,,,,Lille
+Sophie Petit,2024-01-16,250.0,+12025550173,Nice
+,2024-01-16,100.0,+12025550173,Paris
+Lucas Moreau,2024-01-17,,+447700900123,Toulouse
+Lucas Moreau,2024-01-18,1200.0,+337700900123,Toulouse
+Émilie Rousseau,2024-01-18,450.5,+4915123456789,Bordeaux
+Emilie Rousseau,2024-01-19,450.5,+3315123456789,Bordeaux
+Tom O'Neil,2024-01-19,600.0,+33789451236,Nantes
+Tom Oneil,2024-01-20,600.0,+33789451236,Nantes
+Claire Dubois,2024-01-21,700.0,,Rennes
+Claire Dubois,2024-01-21,800.0,+33612345678,Rennes
+Jean Dupont,2024-01-12,1200.5,+33612345678,Paris
